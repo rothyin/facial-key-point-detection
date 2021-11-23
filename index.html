@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        h1 {
+            text-align: center;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        h3 {
+            text-align: center;
+        }
+
+        h3 {
+            text-align: center;
+        }
+
+        h4 {
+            text-align: center;
+        }
+
+        body {
+            margin: auto;
+            width: 85%;
+        }
+
+        .row {
+            display: flex;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .column {
+            display: inline-block;
+        }
+
+        figure {
+            text-align: center;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        table {
+            margin: auto;
+        }
+    </style>
+    <title>Facial Key Point Detection with Neural Networks</title>
+</head>
+
+
+<body>
+    <h1>Facial Key Point Detection with Neural Networks</h1>
+    <h4>Roth Yin | rothyin@berkeley.edu</h4>
+
+    <br>
+    <br>
+    <br>
+
+    <h2>Part 1: Nose Tip Detection</h2>
+
+    <p>Use <code>torch.utils.data.DataLoader</code> to load the data. Reserve 20% for validation.
+    <ul>
+        <li>Resize the images to 60 * 80, adjust the landmarks accordingly. PIL has better anti-aliasing when resizing.
+        </li>
+        <li>Transform the data so that it ranges from -0.5 to 0.5</li>
+    </ul>
+    </p>
+
+    <div class="row">
+        <div class="column">
+            <img src="nose_ground_truth.jpg" width=100%>
+            <figcaption>samples with ground truth landmarks</figcaption>
+        </div>
+    </div>
+
+    <p>Create a CNN with torch.nn.Module with
+    <ul>
+        <li>3 layers of convolution such that
+            <ul>
+                <li>the number of out-channels increases from 12 to 22 to 32</li>
+                <li>the filter sizes decreases from 7 to 5 to 3</li>
+            </ul>
+        </li>
+        <li>2 layers of fully connected with feature size from 3872 to 1024 to 2</li>
+        <li>ReLU and maxpool after each convolution layers</li>
+        <li>Flatten before the fully connected layers</li>
+        <li>ReLU after the first fully connected layers</li>
+    </ul>
+    Train with <code>torch.optim.Adam</code> with learning rate 1e-3 and use loss function <code>torch.nn.MSELoss</code>
+    </p>
+
+    <p>The tuning result is as follows:</p>
+    <div class="row">
+        <div class="column">
+            <img src="learning_rate=3e-3.jpg" width=80%>
+            <img src="batch_size=2_unstable.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="learning_rate=3e-5.jpg" width=80%>
+            <img src="batch_size=8.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="learning_rate=5e-4.jpg" width=80%>
+            <img src="batch_size=16_error_too_high.jpg" width=80%>
+        </div>
+    </div>
+
+    <p>In terms of the learning rate, 3e-3 plateaus in the beginning, indicating that the learning rate is too high.
+        5e-4 does not make too much progress, which means that it steps too slow and is trapped in a local minimum. <br>
+        In terms of the batch sizes, batch size of 2 makes the training oscalates too much. Batch size of 16 makes the
+        training plateau too early.</p>
+
+    <table>
+        <tr>
+            <td>successful examples</td>
+            <td><img src="nose_suc1.jpg" width=80%></td>
+            <td><img src="nose_suc2.jpg" width=80%></td>
+        </tr>
+        <tr>
+            <td>failed examples</td>
+            <td><img src="nose_fail1.jpg" width=80%></td>
+            <td><img src="nose_fail2.jpg" width=80%></td>
+        </tr>
+    </table>
+
+    <p>The successful cases are mainly the front face, which is standard and learned well by the network. The side
+        facing images are prone to error. In the above examples, we can see that the network learned that the nose point
+        is right under some shade, but was not good enough to tell apart different kinds of shade.</p>
+
+
+    <br>
+    <br>
+    <br>
+
+
+    <h2>Part 2: Full Facial Key Points Detection</h2>
+    <p>Use <code>torch.utils.data.DataLoader</code> to load the data. Reserve 20% for validation.
+    <ul>
+        <li>Resize the images to 120 * 160, adjust the landmarks accordingly. PIL has better anti-aliasing when
+            resizing.
+        </li>
+        <li>Transform the data so that it ranges from -0.5 to 0.5</li>
+        <li>Because now we are predicting all facial points, to prevent overfitting, augment the data with
+            <ul>
+                <li><code>torchvision.transforms.ColorJitter</code></li>
+                <li><code>torchvision.transforms.RandomAutocontrast</code></li>
+                <li><code>torchvision.transforms.RandomEqualize</code></li>
+                <li>Rotation: Because the landmarks have to rotate with the images as well, implement the rotation
+                    manually. For a random probability,
+                    <ul>
+                        <li>Use <code>torchvision.transforms.functional.rotate</code> to rotate the images</li>
+                        <li>Use rotation matrix to rotate the landmarks</li>
+                    </ul>
+                </li>
+                <li>Horizontal flip: Because the landmarks have to flip with the images as well, implement the flip
+                    manually. For a random probability,
+                    <ul>
+                        <li>Use <code>torchvision.transforms.functional.hflip</code> to flip the images</li>
+                        <li>Negate the x-components of the landmarks</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+    Samples with ground truth landmarks:
+    </p>
+
+    <div class="row">
+        <div class="column">
+            <img src="face_eg1.jpg" width=80%>
+            <img src="face_eg2.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="face_eg3.jpg" width=80%>
+            <img src="face_eg4.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="face_eg5.jpg" width=80%>
+            <img src="face_eg16.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="face_eg7.jpg" width=80%>
+            <img src="face_eg8.jpg" width=80%>
+        </div>
+    </div>
+
+    <p>Create a CNN with torch.nn.Module with
+    <ul>
+        <li>5 layers of convolution such that
+            <ul>
+                <li>the number of out-channels increases from 1 to 256</li>
+                <li>the filter size is 3</li>
+            </ul>
+        </li>
+        <li>2 layers of fully connected with feature size from 768 to 512 to 116</li>
+        <li>ReLU and maxpool after each convolution layers</li>
+        <li>Flatten before the fully connected layers</li>
+        <li>ReLU after the first fully connected layers</li>
+    </ul>
+    Train with <ul>
+        <li><code>torch.optim.Adam</code> with learning rate 1e-3</li>
+        <li>loss function <code>torch.nn.MSELoss</code></li>
+        <li>batch size 16</li>
+    </ul>
+    </p>
+
+    <div class="row">
+        <div class="column">
+            <img src="face_batch_size=16_epoch_60.jpg" width=80%>
+            <figurecaption>Result</figurecaption>
+        </div>
+    </div>
+
+    <table>
+        <tr>
+            <td>successful examples</td>
+            <td><img src="face_suc1.jpg" width=80%></td>
+            <td><img src="face_suc2.jpg" width=80%></td>
+        </tr>
+        <tr>
+            <td>failed examples</td>
+            <td><img src="face_fail1.jpg" width=80%></td>
+            <td><img src="face_fail2.jpg" width=80%></td>
+        </tr>
+    </table>
+
+    <p>For the first failed example, it might be because the lighting is very strong which makes his face not
+        contrasting enough. So the network is hard to recognize the shadows.<br>
+        For the second failed example, she has a lot more gestures than other people, which may have made it hard for the networks to recognize the points.</p>
+
+    <p>The following are the visualized filters:</p>
+
+    <div class="row">
+        <div class="column">
+            <img src="face_filters.jpg" width=100%>
+        </div>
+    </div>
+
+
+    <br>
+    <br>
+    <br>
+
+
+    <h2>Part 3: Train With Larger Dataset</h2>
+    <p>Use ibug faces, resizing the bounding box crops to size 224 * 224. Though the labeling sometimes causes the
+        landmarks to be outside of the bounding boxes, experimentally it is better not to do anything, because it mimics
+        the situation in the test time. The following samples are shown with the bounding boxes enlarged for aesthetic
+        reasons (specifically enlarging it such that it fits the circle with image center as the center, the largest
+        distance between any key point and the image center as the radius).</p>
+
+    <div class="row">
+        <div class="column">
+            <img src="part3_0.jpg" width=80%>
+            <img src="part3_1.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="part3_2.jpg" width=80%>
+            <img src="part3_3.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="part3_4.jpg" width=80%>
+            <img src="part3_5.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="part3_6.jpg" width=80%>
+            <img src="part3_7.jpg" width=80%>
+        </div>
+    </div>
+
+    <p>Use <code>torchvision.models.resnet18</code>.
+    <ul>
+        <li>Change the in-channel of the first convolution layer to 1 because gray-scaled images are used to save
+            training time.</li>
+        <li>Change the out features of the last fully connected layer to size 136 because each image has 68 key points.
+        </li>
+    </ul>
+    Train with <ul>
+        <li><code>torch.optim.Adam</code> with learning rate 1e-3</li>
+        <li>loss function <code>torch.nn.MSELoss</code></li>
+        <li>batch size 128</li>
+    </ul>
+    </p>
+
+    <div class="row">
+        <div class="column">
+            <img src="part3_gray.jpg" width=100%>
+        </div>
+    </div>
+
+    <p>Visualization of sampled results:</p>
+    <div class="row">
+        <div class="column">
+            <img src="part3_test0.jpg" width=80%>
+            <img src="part3_test1.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="part3_test2.jpg" width=80%>
+            <img src="part3_test3.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="part3_test4.jpg" width=80%>
+            <img src="part3_test5.jpg" width=80%>
+        </div>
+
+        <div class="column">
+            <img src="part3_test6.jpg" width=80%>
+            <img src="part3_test7.jpg" width=80%>
+        </div>
+    </div>
+
+    <p>Results when running from images outside of ibug</p>
+
+    <div class="row">
+        <div class="column">
+            <img src="part3_self0.jpg" width=33%>
+            <img src="part3_self1.jpg" width=33%>
+            <img src="part3_self2.jpg" width=33%>
+        </div>
+    </div>
+
+    <p>For the first image, the network apparantly takes the hair edge as the jaw edge and recognizes the eyebrows as
+        eyes. This might be because that the cropping method for this image does not align with the method the dataset has used.<br>
+        For the second image, the network is fairly accurate. <br>
+        For the thrid image, the network overestimates the shape of the person's face, which should be thinner than
+        predicted.</p>
+
+    <br>
+    <br>
+    <br>
+
+    <h2>
+        <span style="color: red">
+            Bells & Whistles (Extra Point)
+        </span>
+    </h2>
+
+    <p>Use the above trained networks and results to automatically detect key points to morph faces with the
+        implementation from <a href=https://rothyin.github.io/face-morphing> a previous project.</a></p>
+
+    <div class="row">
+        <div class="column">
+            <img src="morph.gif" width=100%>
+        </div>
+    </div>
+
+
+</body>
+
+</html>
